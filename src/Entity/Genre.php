@@ -2,19 +2,24 @@
 
 namespace App\Entity;
 
+use App\Entity\Livre;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\GenreRepository;
+use ApiPlatform\Core\Annotation\ApiResource; 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 /**
  * @ORM\Entity(repositoryClass=GenreRepository::class)
+ * @ApiResource()
  */
 class Genre
 {
     /**
-     * @ORM\Id
+     * @ORM\Id  
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
      * @Groups({"listGenreSimple","listGenreFull"})
@@ -23,12 +28,12 @@ class Genre
 
     /**
      * @ORM\Column(type="string", length=255)
-     * * @Groups({"listGenreSimple","listGenreFull"})
-     * @Assert\lenght(
+     * @Groups({"listGenreSimple","listGenreFull"})
+     * @Assert\Length(
      *     min=2,
      *     max=50,
      *     minMessage="Le libelle doit faire au moins {{ limit }} caractères",
-     *     maxMessage ="Le libelle doit faire au plus {{ limit }} caractères"
+     *     maxMessage="Le libelle doit faire au plus {{ limit }} caractères"
      * )
      */
     private $libelle;
