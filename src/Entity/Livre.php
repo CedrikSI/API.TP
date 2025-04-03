@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\LivreRepository;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -32,21 +34,16 @@ class Livre
     private $prix;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Genre::class, inversedBy="editeur")
-     */
-    private $genre;
-
-    /**
      * @ORM\ManyToOne(targetEntity=Editeur::class, inversedBy="livres")
      * @ORM\JoinColumn(nullable=false)
-     * @Groups({"listGenreFull"})  
+     *  
      */
     private $editeur;
 
     /**
      * @ORM\ManyToOne(targetEntity=Auteur::class, inversedBy="livres")
      * @ORM\JoinColumn(nullable=false)
-     * @Groups({"listGenreFull"})  
+     *  
      */
     private $auteur;
 
@@ -67,6 +64,12 @@ class Livre
      * @Groups({"listGenreFull"})  
      */
     private $langue;
+
+    /**
+     * @ORM\ManyToOne(targetEntity=genre::class, inversedBy="livres")
+     */
+    private $genre;
+
 
     public function getId(): ?int
     {
@@ -93,18 +96,6 @@ class Livre
     public function setPrix(?float $prix): self
     {
         $this->prix = $prix;
-
-        return $this;
-    }
-
-    public function getGenre(): ?Genre
-    {
-        return $this->genre;
-    }
-
-    public function setGenre(?Genre $genre): self
-    {
-        $this->genre = $genre;
 
         return $this;
     }
@@ -168,4 +159,18 @@ class Livre
 
         return $this;
     }
+
+    public function getGenre(): ?genre
+    {
+        return $this->genre;
+    }
+
+    public function setGenre(?genre $genre): self
+    {
+        $this->genre = $genre;
+
+        return $this;
+    }
+
+
 }

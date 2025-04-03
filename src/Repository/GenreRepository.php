@@ -3,10 +3,14 @@
 namespace App\Repository;
 
 use App\Entity\Genre;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMException;
+use Doctrine\ORM\OptimisticLockException;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 
 /**
  * @extends ServiceEntityRepository<Genre>
@@ -46,6 +50,23 @@ class GenreRepository extends ServiceEntityRepository
             $this->_em->flush();
         }
     }
+
+    public function list(GenreRepository $repo, SerializerInterface $serializer): Response
+{
+    $genres = $repo->findAll();
+    $resultat = $serializer->serialize(
+        $genres,
+        'json',
+        [
+            'groups' => ['listGenreFull'],
+            AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => function ($object) {
+                return $object->getId(); // Return the ID or any other property to break the circular reference
+            },
+        ]
+    );
+
+    return new JsonResponse($resultat, 200, [], true);
+}
 
     // /**
     //  * @return Genre[] Returns an array of Genre objects
