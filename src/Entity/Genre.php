@@ -2,47 +2,57 @@
 
 namespace App\Entity;
 
-use App\Entity\Livre;
 use Doctrine\ORM\Mapping as ORM;
-use App\Repository\GenreRepository;
+use ApiPlatform\Core\Annotation\ApiFilter;
 use Doctrine\Common\Collections\Collection;
-use ApiPlatform\Core\Annotation\ApiResource; 
+use ApiPlatform\Core\Annotation\ApiResource;
 use ApiPlatform\Core\Annotation\ApiSubresource;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
-
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 /**
- * @ORM\Entity(repositoryClass=GenreRepository::class)
- * @ApiResource()
+ * @ORM\Entity(repositoryClass="App\Repository\GenreRepository")
+ * @ApiResource(
+ *      attributes={
+ *          "order"= {"libelle":"ASC"},
+ *          "pagination_enabled"=false
+ *      }
+ * )
  * 
+
+ * @UniqueEntity(
+ *      fields={"libelle"},
+ *      message="il existe déja un genre avec le libellé {{ value }}, veuillez saisir un autre libellé "
+ * )
  */
 class Genre
 {
     /**
-     * @ORM\Id  
-     * @ORM\GeneratedValue
+     * @ORM\Id()
+     * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
-     * @Groups({"listGenreSimple","listGenreFull"})
+     * @Groups({"get_role_adherent"})
      */
     private $id;
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Groups({"listGenreSimple","listGenreFull"})
      * @Assert\Length(
-     *     min=2,
-     *     max=50,
-     *     minMessage="Le libelle doit faire au moins {{ limit }} caractères",
-     *     maxMessage="Le libelle doit faire au plus {{ limit }} caractères"
+     *      min=2,
+     *      max=50,
+     *      minMessage="Le libellé doit contenir au moins {{ limit }} caractères",
+     *      maxMessage="Le libellé doit contenir au plus {{ limit }} caractères"
      * )
+     * @Groups({"get_role_adherent"})
      */
     private $libelle;
 
     /**
-     * @ORM\OneToMany(targetEntity=Livre::class, mappedBy="genre")
-     * @ApiSubresource()
+     * @ORM\OneToMany(targetEntity="App\Entity\Livre", mappedBy="genre")
+     * @ApiSubresource
      */
     private $livres;
 
@@ -51,12 +61,12 @@ class Genre
         $this->livres = new ArrayCollection();
     }
 
-    public function getId(): ?int
+    public function getId(): ? int
     {
         return $this->id;
     }
 
-    public function getLibelle(): ?string
+    public function getLibelle(): ? string
     {
         return $this->libelle;
     }
@@ -69,7 +79,7 @@ class Genre
     }
 
     /**
-     * @return Collection<int, Livre>
+     * @return Collection|Livre[]
      */
     public function getLivres(): Collection
     {
@@ -88,7 +98,8 @@ class Genre
 
     public function removeLivre(Livre $livre): self
     {
-        if ($this->livres->removeElement($livre)) {
+        if ($this->livres->contains($livre)) {
+            $this->livres->removeElement($livre);
             // set the owning side to null (unless already changed)
             if ($livre->getGenre() === $this) {
                 $livre->setGenre(null);
@@ -98,4 +109,8 @@ class Genre
         return $this;
     }
 
+    public function __toString()
+    {
+        return (string)$this->libelle;
+    }
 }

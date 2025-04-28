@@ -3,18 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\Genre;
-use Doctrine\ORM\ORMException;
-use Doctrine\ORM\OptimisticLockException;
-use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
- * @extends ServiceEntityRepository<Genre>
- *
  * @method Genre|null find($id, $lockMode = null, $lockVersion = null)
  * @method Genre|null findOneBy(array $criteria, array $orderBy = null)
  * @method Genre[]    findAll()
@@ -22,51 +14,10 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
  */
 class GenreRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(RegistryInterface $registry)
     {
         parent::__construct($registry, Genre::class);
     }
-
-    /**
-     * @throws ORMException
-     * @throws OptimisticLockException
-     */
-    public function add(Genre $entity, bool $flush = true): void
-    {
-        $this->_em->persist($entity);
-        if ($flush) {
-            $this->_em->flush();
-        }
-    }
-
-    /**
-     * @throws ORMException
-     * @throws OptimisticLockException
-     */
-    public function remove(Genre $entity, bool $flush = true): void
-    {
-        $this->_em->remove($entity);
-        if ($flush) {
-            $this->_em->flush();
-        }
-    }
-
-    public function list(GenreRepository $repo, SerializerInterface $serializer): Response
-{
-    $genres = $repo->findAll();
-    $resultat = $serializer->serialize(
-        $genres,
-        'json',
-        [
-            'groups' => ['listGenreFull'],
-            AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => function ($object) {
-                return $object->getId(); // Return the ID or any other property to break the circular reference
-            },
-        ]
-    );
-
-    return new JsonResponse($resultat, 200, [], true);
-}
 
     // /**
     //  * @return Genre[] Returns an array of Genre objects

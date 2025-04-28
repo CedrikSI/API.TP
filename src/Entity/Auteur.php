@@ -2,41 +2,104 @@
 
 namespace App\Entity;
 
-use App\Repository\AuteurRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Core\Annotation\ApiFilter;
+use Doctrine\Common\Collections\Collection;
+use ApiPlatform\Core\Annotation\ApiResource;
+use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Serializer\Annotation\Groups;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 
 /**
- * @ORM\Entity(repositoryClass=AuteurRepository::class)
+ * @ORM\Entity(repositoryClass="App\Repository\AuteurRepository")
+ * @ApiResource(
+ *      attributes=
+ *          {
+ *          "order"= {"nom":"ASC"},
+ *          "pagination_enabled"=false
+ *          },
+ *      collectionOperations={
+ *          "get"={
+ *              "method"="GET",
+ *              "normalization_context"=
+ *                  {
+ *                      "groups"={"get_auteur_role_adherent"}
+ *                  }
+ *           },
+ *          "post"={
+ *              "method"="POST",
+ *              "access_control"="is_granted('ROLE_ADMIN')",
+ *              "access_control_message"="Vous n'avez pas les droits d'accéder à cette ressource",
+ *              "denormalization_context"= {
+ *                  "groups"={"put_role_manager"}
+ *              }  
+ *          }
+ *      },
+ *      itemOperations={
+ *          "get"={
+ *              "method"="GET",
+ *              "normalization_context"={
+ *                  "groups"={"get_auteur_role_adherent"}
+ *              }
+ *          },
+ *          "put"={
+ *              "method"="PUT",
+ *              "access_control"="is_granted('ROLE_ADMIN')",
+ *              "access_control_message"="Vous n'avez pas les droits d'accéder à cette ressource",
+ *              "denormalization_context"= {
+ *                  "groups"={"put_role_manager"}
+ *              }  
+ *          },
+ *          "delete"={
+ *              "method"="DELETE",
+ *              "access_control"="is_granted('ROLE_ADMIN')",
+ *              "access_control_message"="Vous n'avez pas les droits d'accéder à cette ressource"
+ *          }        
+ * }
+ * )
+ * @ApiFilter(
+ *      SearchFilter::class,
+ *      properties={
+ *          "nom": "ipartial",
+ *          "prenom": "ipartial",
+ *          "nationalite" : "exact"
+ *      }
+ * )
  */
 class Auteur
 {
     /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
+     * @ORM\Id()
+     * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
+     * @Groups({"get_auteur_role_adherent"})
      */
     private $id;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Groups({"get"})
+     * @Groups({"get_auteur_role_adherent","put_role_manager"})
      */
     private $nom;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Groups({"get"})
+     * @Groups({"get_auteur_role_adherent","put_role_manager"})
      */
     private $prenom;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Nationalite::class, inversedBy="auteurs")
+     * @ORM\ManyToOne(targetEntity="App\Entity\Nationalite", inversedBy="auteurs")
      * @ORM\JoinColumn(nullable=false)
+     * @Groups({"get_auteur_role_adherent","put_role_manager"})
      */
-    private $Relation;
+    private $nationalite;
 
     /**
-     * @ORM\OneToMany(targetEntity=Livre::class, mappedBy="auteur")
+     * @ORM\OneToMany(targetEntity="App\Entity\Livre", mappedBy="auteur")
+     * @Groups({"get_auteur_role_adherent"})
      */
     private $livres;
 
@@ -45,12 +108,12 @@ class Auteur
         $this->livres = new ArrayCollection();
     }
 
-    public function getId(): ?int
+    public function getId(): ? int
     {
         return $this->id;
     }
 
-    public function getNom(): ?string
+    public function getNom(): ? string
     {
         return $this->nom;
     }
@@ -62,7 +125,7 @@ class Auteur
         return $this;
     }
 
-    public function getPrenom(): ?string
+    public function getPrenom(): ? string
     {
         return $this->prenom;
     }
@@ -74,20 +137,20 @@ class Auteur
         return $this;
     }
 
-    public function getRelation(): ?Nationalite
+    public function getNationalite(): ? Nationalite
     {
-        return $this->Relation;
+        return $this->nationalite;
     }
 
-    public function setRelation(?Nationalite $Relation): self
+    public function setNationalite(? Nationalite $nationalite): self
     {
-        $this->Relation = $Relation;
+        $this->nationalite = $nationalite;
 
         return $this;
     }
 
     /**
-     * @return Collection<int, Livre>
+     * @return Collection|Livre[]
      */
     public function getLivres(): Collection
     {
@@ -106,7 +169,8 @@ class Auteur
 
     public function removeLivre(Livre $livre): self
     {
-        if ($this->livres->removeElement($livre)) {
+        if ($this->livres->contains($livre)) {
+            $this->livres->removeElement($livre);
             // set the owning side to null (unless already changed)
             if ($livre->getAuteur() === $this) {
                 $livre->setAuteur(null);
@@ -114,5 +178,32 @@ class Auteur
         }
 
         return $this;
+    }
+
+    public function __toString()
+    {
+        return (string)$this->nom . " " . $this->prenom;
+    }
+
+    /**
+     * Retourne le nombre de livres de l'auteur
+     * @Groups({"get"})
+     * @return integer
+     */
+    public function getNbLivres(): int
+    {
+        return $this->livres->count();
+    }
+
+    /**
+     * Retourne le nombre de livres disponibles de cet auteur
+     * @Groups({"get"})
+     * @return integer
+     */
+    public function getNbLivresDispo(): int
+    {
+        return array_reduce($this->livres->toArray(), function ($nb, $livre) {
+            return $nb + ($livre->getDispo() === true ? 1 : 0);
+        }, 0);
     }
 }
